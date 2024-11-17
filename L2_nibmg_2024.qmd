@@ -1,0 +1,319 @@
+---
+title: "Introduction to Multiple Regression"
+author: "Saikat Chakraborty"
+format:
+  html:
+    code-fold: true
+editor: visual
+execute:
+  warning: false
+---
+
+**[DISCLAIMER:]{style="color:red;"}** [Saikat is an employee of GSK. The content, views and opinios expressed in this notebook and during the class are absolutely Saikat's own, and by no way reflects the official stand of GSK on these matters.]{style="color:red;"}
+
+## Load all the necessary packages
+
+```{r}
+#| output: false
+library(MASS)
+library(tidyverse)
+library(broom)
+library(jtools)
+#library(skimr)
+```
+
+## Load the dataset
+
+```{r}
+data(birthwt)
+head(birthwt)
+```
+
+## Variable Description
+**Execute the following code in your computer to explore what the above variables are**
+```{r}
+help(birthwt)
+```
+
+**Dimension of the dataset**
+```{r}
+dim(birthwt)
+```
+
+## Question we are interested in?
+
+**Which variables are predictors of child's birth weight?**
+
+Let us look at the child's birth weight vs mother's smoking status data once again
+
+```{r}
+#Run the model
+birthwt_modat <- birthwt %>%
+  mutate(bwt2 = bwt/1000) %>%
+  mutate(lwt2 = lwt*0.454)
+lm_simple <- lm(bwt2 ~ lwt2, data = birthwt_modat)
+
+#Plot the distribution of uterine irritability
+ggplot(birthwt_modat, aes(x = as.factor(smoke), y = bwt2)) +
+  geom_boxplot() +
+  geom_dotplot(binaxis='y', stackdir='center', color = "black", fill = "red") +
+  #stat_summary(fun.data=mean_sdl, fun.args = list(mult=1), 
+   #              geom="pointrange", color="red") +
+  labs(x = "\nMother's Smoking Status", y = "Child's Birth Weight\n") +
+  scale_x_discrete(labels = c("Non-smoker", "Smoker")) +
+  theme_classic() +
+  theme(text = element_text(size = 15))
+```
+
+And we also saw that our model was not that good in explaining this.
+
+```{r}
+lm_simple2 <- lm(bwt2 ~ as.factor(smoke), data = birthwt_modat)
+
+ggplot(birthwt_modat, aes(x = predict(lm_simple2), y=bwt2, color = as.factor(smoke))) +
+  geom_point() +
+  scale_x_reverse() +
+  geom_abline(intercept = 0, slope = -1) +
+  labs(x = "\nPredicted Birth Weight", y = "Actual Birth Weight\n") +
+  theme_classic() +
+  theme(text = element_text(size = 18)) +
+  theme(legend.title = element_blank()) +
+  scale_color_manual(labels = c("Non-smoker", "Smoker"), values = c("blue", "red")) 
+  
+```
+
+# But the distribution of smokers could be different among different age groups of mothers.
+
+```{r}
+
+ggplot(birthwt_modat, aes(x = as.factor(smoke), y = age)) +
+  geom_boxplot() +
+  geom_dotplot(binaxis='y', stackdir='center', color = "black", fill = "red") +
+  #stat_summary(fun.data=mean_sdl, fun.args = list(mult=1), 
+   #              geom="pointrange", color="red") +
+  labs(x = "\nMother's Smoking Status", y = "Mother's age (years)\n") +
+  scale_x_discrete(labels = c("Non-smoker", "Smoker")) +
+  theme_classic() +
+  theme(text = element_text(size = 15))
+```
+#Let us try another kind of plot
+
+```{r}
+ggplot(birthwt_modat, aes(x = age, fill = as.factor(smoke))) +
+  geom_histogram() +
+  labs(x = "Mother's age (years)\n") +
+  theme_classic() +
+  theme(text = element_text(size = 15)) +
+  scale_fill_discrete(labels = c("Non-smoker", "Smoker")) +
+  theme(legend.title = element_blank())
+
+# Density plot
+
+ggplot(birthwt_modat, aes(x = age, color = as.factor(smoke))) +
+  geom_density() +
+  labs(x = "Mother's age (years)\n") +
+  theme_classic() +
+  theme(text = element_text(size = 15)) +
+  scale_color_discrete(labels = c("Non-smoker", "Smoker")) +
+  theme(legend.title = element_blank())
+
+```
+
+# Smoker and non-smsoker mother's weight
+
+```{r}
+#Plot the distribution of uterine irritability
+ggplot(birthwt_modat, aes(x = as.factor(smoke), y = lwt2)) +
+  geom_boxplot() +
+  geom_dotplot(binaxis='y', stackdir='center', color = "black", fill = "red") +
+  #stat_summary(fun.data=mean_sdl, fun.args = list(mult=1), 
+   #              geom="pointrange", color="red") +
+  labs(x = "\nMother's Smoking Status", y = "Mother's weight (kg)\n") +
+  scale_x_discrete(labels = c("Non-smoker", "Smoker")) +
+  theme_classic() +
+  theme(text = element_text(size = 15))
+```
+
+```{r}
+ggplot(birthwt_modat, aes(x = lwt2, fill = as.factor(smoke))) +
+  geom_histogram() +
+  labs(x = "Mother's weight (kg)\n") +
+  theme_classic() +
+  theme(text = element_text(size = 15)) +
+  scale_fill_discrete(labels = c("Non-smoker", "Smoker")) +
+  theme(legend.title = element_blank())
+
+# Density plot
+
+ggplot(birthwt_modat, aes(x = lwt2, color = as.factor(smoke))) +
+  geom_density() +
+  labs(x = "Mother's weight (kg)\n") +
+  theme_classic() +
+  theme(text = element_text(size = 15)) +
+  scale_color_discrete(labels = c("Non-smoker", "Smoker")) +
+  theme(legend.title = element_blank())
+``` 
+
+```{r}
+#Plot the distribution of uterine irritability
+
+ggplot(birthwt_modat %>%
+         mutate(race = as.factor(race)), aes(as.factor(smoke))) +
+  geom_bar(aes(fill = race), width = 0.5) +
+  theme_classic() +
+  theme(text = element_text(size = 18)) +
+  labs(x = "\nSmoking Status", y = "Count") +
+  guides(fill=guide_legend(title="Race")) +
+  scale_fill_manual(labels = c("1" = "White", "2" = "Black", "3" = "Other"),
+                     values = c("orange2", "darkgreen", "blue3")) +
+  scale_x_discrete(labels = c("Non-smoker", "Smoker"))
+
+```
+ #Number of previous premature labours
+ 
+```{r}
+ggplot(birthwt_modat, aes(as.factor(smoke))) +
+  geom_bar(aes(fill = as.factor(ptl)), width = 0.5) +
+  theme_classic() +
+  theme(text = element_text(size = 18)) +
+  labs(x = "\nSmoking Status", y = "Count") +
+  guides(fill=guide_legend(title="Premature \nlabours")) +
+  #scale_fill_manual(labels = c("1" = "White", "2" = "Black", "3" = "Other"),
+   #                  values = c("pink3", "lightgreen", "lightblue")) +
+  scale_x_discrete(labels = c("Non-smoker", "Smoker"))
+```
+
+ #Hypertension
+ 
+```{r}
+ggplot(birthwt_modat, aes(as.factor(smoke))) +
+  geom_bar(aes(fill = as.factor(ht)), width = 0.5) +
+  theme_classic() +
+  theme(text = element_text(size = 18)) +
+  labs(x = "\nSmoking Status", y = "Count") +
+  guides(fill=guide_legend(title="Hypertension")) +
+  #scale_fill_manual(labels = c("1" = "White", "2" = "Black", "3" = "Other"),
+   #                  values = c("pink3", "lightgreen", "lightblue")) +
+  scale_x_discrete(labels = c("Non-smoker", "Smoker"))
+```
+ 
+ #Uterine instability
+ 
+```{r}
+ggplot(birthwt_modat, aes(as.factor(smoke))) +
+  geom_bar(aes(fill = as.factor(ui)), width = 0.5) +
+  theme_classic() +
+  theme(text = element_text(size = 18)) +
+  labs(x = "\nSmoking Status", y = "Count") +
+  guides(fill=guide_legend(title="Uterine \ninstability")) +
+  #scale_fill_manual(labels = c("1" = "White", "2" = "Black", "3" = "Other"),
+   #                  values = c("pink3", "lightgreen", "lightblue")) +
+  scale_x_discrete(labels = c("Non-smoker", "Smoker"))
+```
+
+ #Number of physian visit
+ 
+```{r}
+ggplot(birthwt_modat, aes(as.factor(smoke))) +
+  geom_bar(aes(fill = as.factor(ftv)), width = 0.5) +
+  theme_classic() +
+  theme(text = element_text(size = 18)) +
+  labs(x = "\nSmoking Status", y = "Count") +
+  guides(fill=guide_legend(title="# Physician \nvisits")) +
+  #scale_fill_manual(labels = c("1" = "White", "2" = "Black", "3" = "Other"),
+   #                  values = c("pink3", "lightgreen", "lightblue")) +
+  scale_x_discrete(labels = c("Non-smoker", "Smoker"))
+```
+
+# Variables of importance
+
+- Mother's Race
+
+
+
+# Other variables
+
+- Mother's age
+- Mother's weight
+- Hypertension
+- Uterine instability
+- Premature labours during pregnancy
+- Number of physician visits
+
+# Run a model with child's birth weight as response, smoking status as explanatory variable, and race, premature labour and physician visits as covariates
+
+```{r}
+#Step1
+lm_multip1 <- lm(bwt2 ~ as.factor(smoke) + as.factor(race), data = birthwt_modat)
+
+#Step2
+lm_multip1_tidy <- broom::tidy(lm_multip1)
+
+#Step3
+ggplot(lm_multip1_tidy, aes(y = term, x= estimate)) +
+  geom_point(color = "darkred") +
+  geom_vline(xintercept = 0, color = "red", linetype = "dashed") +
+  geom_errorbar(aes(xmin = estimate - 1.96*std.error, 
+                    xmax = estimate + 1.96*std.error), width = 0.25,
+                color = 'black') +
+  labs(x = "\nCoefficient +/- CI", y = "") +
+  #scale_y_discrete(labels = c("Intercept", "Mother's Smoking Status")) +
+  theme_classic() +
+  theme(text = element_text(size = 15))
+
+#Step4
+for (i in 1:6){
+  plot(lm_multip1, i)
+}
+
+#Step5
+ggplot(birthwt_modat, aes(x = predict(lm_multip1), y=bwt2, color = as.factor(smoke))) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1) +
+  labs(x = "\nPredicted Birth Weight", y = "Actual Birth Weight\n") +
+  theme_classic() +
+  theme(text = element_text(size = 15))
+
+#Step6
+summary(lm_multip1)
+```
+# Model with all variables
+
+```{r}
+#Step1
+#lm_multip1 <- lm(bwt2 ~ as.factor(smoke) + as.factor(race) + as.factor(ptl) + as.factor(ftv) + lwt2 +
+ #                  ht + , data = birthwt_modat)
+
+#Step2
+lm_multip1_tidy <- broom::tidy(lm_multip1)
+
+#Step3
+ggplot(lm_multip1_tidy, aes(y = term, x= estimate)) +
+  geom_point(color = "darkred") +
+  geom_vline(xintercept = 0, color = "red", linetype = "dashed") +
+  geom_errorbar(aes(xmin = estimate - 1.96*std.error, 
+                    xmax = estimate + 1.96*std.error), width = 0.25,
+                color = 'black') +
+  labs(x = "\nCoefficient +/- CI", y = "") +
+  #scale_y_discrete(labels = c("Intercept", "Mother's Smoking Status")) +
+  theme_classic() +
+  theme(text = element_text(size = 15))
+
+#Step4
+for (i in 1:6){
+  plot(lm_multip1, i)
+}
+
+#Step5
+ggplot(birthwt_modat, aes(x = predict(lm_multip1), y=bwt2, color = as.factor(smoke))) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1) +
+  labs(x = "\nPredicted Birth Weight", y = "Actual Birth Weight\n") +
+  theme_classic() +
+  theme(text = element_text(size = 15))
+
+#Step6
+summary(lm_multip1)
+```
+
+
