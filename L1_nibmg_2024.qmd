@@ -9,11 +9,9 @@ execute:
   warning: false
 ---
 
-**[DISCLAIMER:]{style="color:red;"}** [Saikat is an employee of GSK. The content, views and opinios expressed in this notebook and during the class are absolutely Saikat's own, and by no way reflects the official stand of GSK on these matters.]{style="color:red;"}
+[**DISCLAIMER:**]{style="color:red;"} [Saikat is an employee of GSK. The content, views and opinios expressed in this notebook and during the class are absolutely Saikat's own, and by no way reflects the official stand of GSK on these matters.]{style="color:red;"}
 
 ## Load all the necessary packages
-
-
 
 ```{r}
 #| output: false
@@ -30,18 +28,20 @@ library(jtools)
 data(birthwt)
 head(birthwt)
 ```
+
 ## Variable Description
+
 **Execute the following code in your computer to explore what the above variables are**
+
 ```{r}
 help(birthwt)
 ```
 
 **Dimension of the dataset**
+
 ```{r}
 dim(birthwt)
 ```
-
-
 
 ```{r}
 #skimr::skim(birthwt)
@@ -61,7 +61,8 @@ ggplot(data = birthwt, aes(x = bwt)) +
   theme(text = element_text(size = 15))
 ```
 
-**The birth weights are given in grams. Let us change the unit of birth weight to kg."
+The birth weights are given in grams. Let us change the unit of birth weight to kg.
+
 ```{r}
 ggplot(data = birthwt, aes(x = bwt/1000)) +
   geom_histogram(bins = 10, color = 'black', fill = 'lightblue3') +
@@ -71,18 +72,40 @@ ggplot(data = birthwt, aes(x = bwt/1000)) +
 ```
 
 ## Is there any relation between mother's age and the child's birth weight?
+
 ```{r}
 ggplot(data = birthwt, aes(y = bwt/1000, x = age)) +
   geom_point(color = 'black') +
   labs(y = "Birth Weight (in kg)\n", x = "\nMother's Age") +
-  geom_smooth(method = 'lm', color = 'red') +
+  #geom_smooth(method = 'lm', color = 'red') +
   theme_classic() +
   theme(text = element_text(size = 15))
+```
+
+There could be virtually infinite lines one may draw through this.
+```{r}
+mu <- matrix(c(3, 1), nrow = 1)
+covar_mat <- matrix(c(1, 0.5 , 0.5, 1), ncol = 2, nrow = 2)
+
+rand_coef <- mvrnorm(1000, mu = mu, Sigma = covar_mat)
+df_rand_coef <- as.data.frame(rand_coef, col.names = c("Slope", "Intercept"))
+```
+
+
+```{r}
+ggplot(data = birthwt, aes(y = bwt/1000, x = age)) +
+  geom_point(color = 'black') +
+  labs(y = "Birth Weight (in kg)\n", x = "\nMother's Age") +
+  theme_classic() +
+  theme(text = element_text(size = 15)) +
+  geom_abline(data = df_rand_coef, aes(intercept = V1, 
+                                slope = V2), color = "red", linetype = "dashed")
 ```
 
 **There dosen't appear to be any relation.**
 
 ## Is there any relation between mother's weight and the child's birth weight?
+
 ```{r}
 ggplot(data = birthwt, aes(y = bwt/1000, x = lwt*0.454)) +
   #The mother's weight is given in pounds. The 0.454 multiplier is for
@@ -93,9 +116,11 @@ ggplot(data = birthwt, aes(y = bwt/1000, x = lwt*0.454)) +
   theme_classic() +
   theme(text = element_text(size = 15))
 ```
+
 **There could be some relation.**
 
 ## Let us try to quantify this trend
+
 ```{r}
 
 #Run the model
@@ -121,6 +146,7 @@ ggplot(lm_simple_tidy, aes(y = term, x= estimate)) +
 ```
 
 ## Remove the intercept
+
 ```{r}
 #Plot only the coefficient for mother's weight
 ggplot(lm_simple_tidy[2,], aes(y = term, x= estimate)) +
@@ -136,6 +162,7 @@ ggplot(lm_simple_tidy[2,], aes(y = term, x= estimate)) +
 ```
 
 ## How good is our model?
+
 ```{r}
 #Model diagnostics
 for (i in 1:6){
@@ -144,11 +171,27 @@ for (i in 1:6){
 ```
 
 ## Predicted vs Observed
+
 ```{r}
 ggplot(birthwt_modat, aes(x = predict(lm_simple), y=bwt2)) +
   geom_point(color = "darkred") +
   geom_abline(intercept = 0, slope = 1) +
   labs(x = "\nPredicted Birth Weight", y = "Actual Birth Weight\n") +
+  theme_classic() +
+  theme(text = element_text(size = 15)) +
+  geom_hline(aes(yintercept = mean(bwt/1000)), linetype = 'dashed')
+```
+
+## Variance explained
+
+```{r}
+ggplot(data = birthwt, aes(y = bwt/1000, x = lwt*0.454)) +
+  #The mother's weight is given in pounds. The 0.454 multiplier is for
+  #converting it into kgs
+  geom_point(color = 'black') +
+  geom_hline(aes(yintercept = mean(bwt/1000)), linetype = 'dashed') +
+  labs(y = "Birth Weight (in kg)\n", x = "\nMother's Weight (in kg)") +
+  geom_smooth(method = 'lm', color = 'red') +
   theme_classic() +
   theme(text = element_text(size = 15))
 ```
@@ -160,10 +203,11 @@ summary(lm_simple)
 lm_simple_tidy
 ```
 
-**As you saw, we summarized our model at the last step. Only after we have explored the model considerably. Although, we observed a significant p-value, the predicted vs observed plot suggest that our model is not that good in predicting what the newborns' birth weight is going to be. Furthermore, the R-squared suggest that our model can explain only 3% of the overall variance in the children's birthweght. Therefore, we must always be careful in interpreting our models from p-values alone.** 
+**As you saw, we summarized our model at the last step. Only after we have explored the model considerably. Although, we observed a significant p-value, the predicted vs observed plot suggest that our model is not that good in predicting what the newborns' birth weight is going to be. Furthermore, the R-squared suggest that our model can explain only 3% of the overall variance in the children's birthweght. Therefore, we must always be careful in interpreting our models from p-values alone.**
 
 ## We can also ask similar question for a categorical predictor
-For example, is there any relation between mother's uterine irritability and child's birth weight 
+
+For example, is there any relation between mother's uterine irritability and child's birth weight
 
 ```{r}
 #Plot the distribution of uterine irritability
@@ -179,6 +223,7 @@ ggplot(birthwt_modat, aes(x = as.factor(ui), y = bwt2)) +
 ```
 
 ## With the mother's smoking status during pregnancy
+
 ```{r}
 #Plot the distribution of uterine irritability
 ggplot(birthwt_modat, aes(x = as.factor(smoke), y = bwt2)) +
@@ -193,6 +238,7 @@ ggplot(birthwt_modat, aes(x = as.factor(smoke), y = bwt2)) +
 ```
 
 ## We can fit similar models
+
 ```{r}
 #Step1: Fit a linear model
 lm_simple2 <- lm(bwt2 ~ as.factor(smoke), data = birthwt_modat)
@@ -223,7 +269,10 @@ ggplot(birthwt_modat, aes(x = predict(lm_simple2), y=bwt2, color = as.factor(smo
   geom_abline(intercept = 0, slope = 1) +
   labs(x = "\nPredicted Birth Weight", y = "Actual Birth Weight\n") +
   theme_classic() +
-  theme(text = element_text(size = 15))
+  theme(text = element_text(size = 15)) +
+  geom_hline(aes(yintercept = mean(bwt/1000)), linetype = 'dashed') +
+  scale_color_manual(labels = c("Non-smoker", "Smoker"), values =
+                       c("orange3", "skyblue3"))
 
 #Step6: Summarize your model
 summary(lm_simple2)
@@ -232,6 +281,7 @@ summary(lm_simple2)
 ```
 
 ## Sum of squares tables
+
 ```{r}
 # 1. Child's weight vs mother's weight
 anova(lm_simple)
@@ -249,9 +299,11 @@ summary(lm_simple2)
 ```
 
 # Homework
+
 Repeat simple linear regression with uterine irritability (ui) as the explanatory variable and child's weight as response
 
 #One last plot before we go
+
 ```{r}
 birthwt_modat$pred <- predict(lm_simple)
 birthwt_modat2 <- birthwt_modat %>%
