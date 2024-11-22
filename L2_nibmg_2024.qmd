@@ -20,8 +20,99 @@ library(tidyverse)
 library(broom)
 library(jtools)
 library(lmtest)
+library(sjPlot)
+library(sjmisc)
 ```
 
+## Relation between vaccination status and death due to Covid
+
+[Public Health England: Technical briefing 20](https://www.openintro.org/data/index.php?data=simpsons_paradox_covid#:~:text=A%20dataset%20on%20Delta%20Variant,a%20much%20higher%20risk%20population.)
+```{r}
+
+#Load the data
+load(file = 'simpsons_paradox_covid.rda')
+
+simpson_dat <- simpsons_paradox_covid %>%
+  mutate(age_group = as.factor(age_group)) %>%
+  mutate(vaccine_status = as.factor(vaccine_status)) %>%
+  mutate(outcome = as.factor(outcome))
+  
+
+# First model: death ~ vacination status
+mod_simpson1 <- glm(outcome ~ vaccine_status, 
+                    family = "binomial", data = simpson_dat)
+
+
+#Second model: adjusted for age: <50, >= 50
+mod_simpson2 <- glm(outcome ~ vaccine_status +
+                      age_group, 
+                    family = 'binomial', data = simpson_dat)
+
+mod_simpson1_tidy <- broom::tidy(mod_simpson1)
+mod_simpson2_tidy <- broom::tidy(mod_simpson2)
+
+#plot the models
+
+ggplot(mod_simpson1_tidy, aes(y = term, x= estimate)) +
+  geom_point(color = "darkred") +
+  geom_errorbar(aes(xmin = estimate - 1.96*std.error, 
+                    xmax = estimate + 1.96*std.error), width = 0.25,
+                color = 'black') +
+  labs(x = "\nCoefficient +/- CI", y = "", title = "First model: death ~ vacination status") +
+   geom_vline(xintercept = 0, color = "red", linetype = "dashed") +
+  scale_y_discrete(labels = c("Intercept", "\nVaccination \n Status")) +
+  theme_classic() +
+  theme(text = element_text(size = 15)) +
+  xlim(-2, 7)
+
+ggplot(mod_simpson2_tidy, aes(y = term, x= estimate)) +
+  geom_point(color = "darkred") +
+  geom_errorbar(aes(xmin = estimate - 1.96*std.error, 
+                    xmax = estimate + 1.96*std.error), width = 0.25,
+                color = 'black') +
+  labs(x = "\nCoefficient +/- CI", y = "", title = "Second model: adjusted for age: <50, >= 50") +
+   geom_vline(xintercept = 0, color = "red", linetype = "dashed") +
+  scale_y_discrete(labels = c("Intercept", "Age", "\nVaccination \n Status")) +
+  theme_classic() +
+  theme(text = element_text(size = 15)) +
+  xlim(-2, 7)
+
+```
+
+```{r}
+#Predicted vs observed plot
+
+effect_plot(mod_simpson1, pred = vaccine_status, interval = TRUE,
+            cat.geom = 'line', y.label = 'prob(death)')
+
+effect_plot(mod_simpson2, pred = vaccine_status, interval = TRUE,
+            cat.geom = 'line', y.label = 'prob(death)')
+
+ggplot(simpson_dat, aes(y = predict(mod_simpson1, type = "response"), x= as.factor(vaccine_status))) +
+  geom_point() + 
+  geom_line() +
+  theme_classic()
+
+ggplot(simpson_dat, aes(y = predict(mod_simpson2, type = "response"), x= as.factor(vaccine_status))) +
+  geom_point(aes(color = as.factor(age_group))) +
+  geom_smooth() +
+  theme_classic()
+
+ggplot(simpson_dat, aes(x= as.factor(vaccine_status))) +
+  geom_bar(aes(fill = outcome)) + 
+  #scale_y_log10() +
+  scale_y_continuous(labels = scales::percent) +
+    theme_classic()
+
+ggplot(simpson_dat, aes(x= as.factor(vaccine_status))) +
+  geom_bar(aes(fill = outcome), position = "dodge") + 
+  scale_y_log10()
+
+
+# plot_model(mod_simpson1, type = "pred")
+# plot_model(mod_simpson2, type = "pred", terms = c("vaccine_status", "age_group"))
+
+```
 ## Load the dataset
 
 ```{r}
