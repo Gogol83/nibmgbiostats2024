@@ -1,0 +1,95 @@
+---
+title: "Introduction to Logistic Regression"
+author: "Saikat Chakraborty"
+format:
+  html:
+    code-fold: true
+editor: visual
+execute:
+  warning: false
+---
+
+[**DISCLAIMER:**]{style="color:red;"} [Saikat is an employee of GSK. The content, views and opinios expressed in this notebook and during the class are absolutely Saikat's own, and by no way reflects the official stand of GSK on these matters.]{style="color:red;"}
+
+## Load all the necessary packages
+
+```{r}
+#| output: false
+library(MASS)
+library(tidyverse)
+library(broom)
+library(jtools)
+library(lmtest)
+library(sjPlot)
+library(sjmisc)
+```
+
+## Load the dataset
+
+```{r}
+data(birthwt)
+head(birthwt)
+```
+## Plot
+
+```{r}
+birthwt_modat <- birthwt %>%
+  mutate(bwt2 = bwt/1000) %>%
+  mutate(lwt2 = lwt*0.454)
+
+ggplot(birthwt_modat, aes(x = lwt2, y = as.factor(low))) +
+  geom_point() +
+  labs(x = "Mother's Wight", y = "Child's Birth Weight") +
+  theme_classic() +
+  theme(text = element_text(size = 15))
+```
+
+```{r}
+
+mod_lm <- lm(as.integer(low) ~ lwt2, data = birthwt_modat)
+
+ggplot(birthwt_modat, aes(x = lwt2, y = as.integer(low))) +
+  geom_point() +
+  labs(x = "Mother's Wight", y = "Child's Birth Weight") +
+  theme_classic() +
+  geom_smooth(method = "lm") +
+  theme(text = element_text(size = 15))
+
+ggplot(birthwt_modat, aes(x = lwt2, y = as.integer(low))) +
+  geom_point() +
+  labs(x = "Mother's Wight", y = "Child's Birth Weight") +
+  theme_classic() +
+  geom_smooth(method = "glm", method.args = list(family = binomial(link = "logit"))) +
+  theme(text = element_text(size = 15))
+```
+
+```{r}
+ggplot(birthwt_modat, aes(x = predict(mod_lm), y = low)) +
+  geom_point(color = "darkred") +
+  labs(x = "\nPredicted Birth Weight", y = "Actual Birth Weight\n") +
+  theme_classic() +
+  geom_smooth(method = 'lm') +
+  theme(text = element_text(size = 15)) 
+```
+## What is a logistic function?
+
+```{r}
+x <- -10:10
+y <- 1/(1 + exp(-x))
+plot(x, y, col = "red")
+
+```
+
+
+## Run a logistic regression
+
+```{r}
+mod_glm <- glm(low ~ lwt2, data = birthwt_modat, family = binomial(link = "logit"))
+ggplot(birthwt_modat, aes(x = predict(mod_glm, type = "response"), y = low)) +
+  geom_point(color = "darkred") +
+  labs(x = "\nPredicted Birth Weight", y = "Actual Birth Weight\n") +
+  theme_classic() +
+  theme(text = element_text(size = 15))
+
+
+```
