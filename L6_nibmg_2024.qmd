@@ -1,0 +1,212 @@
+---
+title: "Evaluating models"
+author: "Saikat Chakraborty"
+format:
+  html:
+    code-fold: true
+editor: visual
+execute:
+  warning: false
+---
+
+[**DISCLAIMER:**]{style="color:red;"} [Saikat is an employee of GSK. The content, views and opinios expressed in this notebook and during the class are absolutely Saikat's own, and by no way reflects the official stand of GSK on these matters.]{style="color:red;"}
+
+## Load all the necessary packages
+
+```{r}
+#| output: false
+library(MASS)
+library(tidyverse)
+library(broom)
+library(jtools)
+library(lmtest)
+library(cv)
+```
+
+## Load the dataset
+
+```{r}
+data(birthwt)
+head(birthwt)
+```
+
+## Linear Model
+
+```{r}
+# Modify the data for modelling
+birthwt_modat <- birthwt %>%
+  mutate(bwt2 = bwt/1000) %>%
+  mutate(lwt2 = lwt*0.454)
+lm_simple <- lm(bwt2 ~ lwt2, data = birthwt_modat)
+
+#Step1
+lm_multip1 <- lm(bwt2 ~ as.factor(smoke) + as.factor(race), data = birthwt_modat)
+
+#Step2
+lm_multip1_tidy <- broom::tidy(lm_multip1)
+
+#Step3
+ggplot(lm_multip1_tidy, aes(y = term, x= estimate)) +
+  geom_point(color = "darkred") +
+  geom_vline(xintercept = 0, color = "red", linetype = "dashed") +
+  geom_errorbar(aes(xmin = estimate - 1.96*std.error, 
+                    xmax = estimate + 1.96*std.error), width = 0.25,
+                color = 'black') +
+  labs(x = "\nCoefficient +/- CI", y = "") +
+  #scale_y_discrete(labels = c("Intercept", "Mother's Smoking Status")) +
+  theme_classic() +
+  theme(text = element_text(size = 15))
+
+#Step4
+for (i in 1:6){
+  plot(lm_multip1, i)
+}
+
+#Step5
+ggplot(birthwt_modat, aes(x = predict(lm_multip1), y=bwt2, color = as.factor(smoke))) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1) +
+  labs(x = "\nPredicted Birth Weight", y = "Actual Birth Weight\n") +
+  theme_classic() +
+  theme(text = element_text(size = 15)) +
+  geom_hline(aes(yintercept = mean(bwt2)), linetype = "dashed", color = "red") +
+  scale_color_manual(labels = c("Non-smoker", "Smoker"), values =
+                       c("orange3", "skyblue3")) +
+  theme(legend.title = element_blank())
+
+#Step6
+summary(lm_multip1)
+```
+
+## ANOVA table
+```{r}
+aov_multip1 <- anova(lm_multip1)
+aov_multip1
+```
+
+# Model with all variables
+
+```{r}
+#Step1
+lm_multip2 <- lm(bwt2 ~ as.factor(smoke) + as.factor(race) + age +
+                   lwt2 + ht + ui + ptl + ftv, data = birthwt_modat)
+
+#Step2
+lm_multip2_tidy <- broom::tidy(lm_multip2)
+
+#Step3
+ggplot(lm_multip2_tidy, aes(y = term, x= estimate)) +
+  geom_point(color = "darkred") +
+  geom_vline(xintercept = 0, color = "red", linetype = "dashed") +
+  geom_errorbar(aes(xmin = estimate - 1.96*std.error, 
+                    xmax = estimate + 1.96*std.error), width = 0.25,
+                color = 'black') +
+  labs(x = "\nCoefficient +/- CI", y = "") +
+  #scale_y_discrete(labels = c("Intercept", "Mother's Smoking Status")) +
+  theme_classic() +
+  theme(text = element_text(size = 15))
+
+#Step4
+for (i in 1:6){
+  plot(lm_multip2, i)
+}
+
+#Step5
+ggplot(birthwt_modat, aes(x = predict(lm_multip2), y=bwt2, color = as.factor(smoke))) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1) +
+  labs(x = "\nPredicted Birth Weight", y = "Actual Birth Weight\n") +
+  theme_classic() +
+  theme(text = element_text(size = 15)) +
+  geom_hline(aes(yintercept = mean(bwt2)), linetype = 'dashed', color = "red") +
+  scale_color_manual(labels = c("Non-smoker", "Smoker"), values =
+                       c("orange3", "skyblue3")) +
+  theme(legend.title = element_blank())
+
+#Step6
+summary(lm_multip2)
+```
+
+# For the sake of completeness: model comparison
+
+```{r}
+test_model <- anova(lm_multip1, lm_multip2)
+summary(test_model)
+test_model_aic <- AIC(lm_multip1, lm_multip2)
+test_model_bic <- BIC(lm_multip1, lm_multip2)
+test_model_lr <- lrtest(lm_multip1, lm_multip2)
+
+```
+
+## Cross validation
+
+```{r}
+cv_multip1 <- cv(lm_multip1)
+summary(cv_multip1)
+plot(cv_multip1)
+plot(cv_multip1, what = "coefficients")
+```
+
+## Explore the *cv* function
+
+```{r}
+help(cv)
+```
+
+## Similarly for GLM
+
+```{r}
+mod_glm <- glm(low ~ lwt2, data = birthwt_modat, family = binomial(link = "logit"))
+ggplot(birthwt_modat, aes(x = predict(mod_glm, type = "response"), y = low)) +
+  geom_point(color = "darkred") +
+  labs(x = "\nPredicted Birth Weight", y = "Actual Birth Weight\n") +
+  theme_classic() +
+  theme(text = element_text(size = 15))
+
+```
+
+
+##
+
+```{r}
+birthwt_modat %>%
+  mutate(low2 = case_match(low, 0 ~ 1, 1 ~ 0)) -> birthwt_modat
+
+#Step1
+mod_glm <- glm(low2 ~ as.factor(smoke) + as.factor(race), data = birthwt_modat, family = binomial(link = "logit"))
+
+#Step2
+mod_glm_tidy <- broom::tidy(mod_glm)
+
+#Step3
+ggplot(mod_glm_tidy, aes(y = term, x= estimate)) +
+  geom_point(color = "darkred") +
+  geom_vline(xintercept = 0, color = "red", linetype = "dashed") +
+  geom_errorbar(aes(xmin = estimate - 1.96*std.error, 
+                    xmax = estimate + 1.96*std.error), width = 0.25,
+                color = 'black') +
+  labs(x = "\nCoefficient +/- CI", y = "") +
+  #scale_y_discrete(labels = c("Intercept", "Mother's Smoking Status")) +
+  theme_classic() +
+  theme(text = element_text(size = 15))
+
+#Step4
+for (i in 1:6){
+  plot(lm_multip1, i)
+}
+
+#Step5
+# ggplot(birthwt_modat, aes(x = predict(mod_glm), y=low2, color = as.factor(smoke))) +
+#   geom_point() +
+#   geom_abline(intercept = 0, slope = 1) +
+#   labs(x = "\nPredicted Birth Weight", y = "Actual Birth Weight\n") +
+#   theme_classic() +
+#   theme(text = element_text(size = 15)) +
+#   geom_hline(aes(yintercept = mean(low2)), linetype = "dashed", color = "red") +
+#   scale_color_manual(labels = c("Non-smoker", "Smoker"), values =
+#                        c("orange3", "skyblue3")) +
+#   theme(legend.title = element_blank())
+
+#Step6
+summary(mod_glm)
+```

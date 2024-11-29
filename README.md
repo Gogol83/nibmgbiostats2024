@@ -40,3 +40,35 @@ Checkout the *jtools* package for cisualizing your model in different ways, icnl
 - https://www.stats.ox.ac.uk/pub/MASS4/
 - https://www.mimuw.edu.pl/~pokar/StatystykaMgr/Books/VenablesRipley_ModernAppliedStatisticsS02.pdf
 
+**Lecture 3 and 4 Supplements**
+Good and bad controls: https://ftp.cs.ucla.edu/pub/stat_ser/r493.pdf
+Table II Fallacy paper: https://pmc.ncbi.nlm.nih.gov/articles/PMC3626058/pdf/kws412.pdf
+
+*Directed Acyclic Graph*
+
+Chapers from JUDEA PEARL, MADELYN GLYMOUR, NICHOLAS P. JEWELL - CAUSAL INFERENCE IN STATISTICS: A PRIMER
+- https://bayes.cs.ucla.edu/PRIMER/primer-ch1.pdf
+- https://bayes.cs.ucla.edu/PRIMER/primer-ch2.pdf
+
+(Visit https://bayes.cs.ucla.edu/jp_home.html for the entire book)
+
+Video: https://www.youtube.com/watch?v=KNPYUVmY3NM&t=1287s
+(associated GitHub page: https://github.com/rmcelreath/causal_salad_2021)
+
+**Lecture 5 Supplements**
+
+https://en.wikipedia.org/wiki/Logistic_regression
+
+https://en.wikipedia.org/wiki/Generalized_linear_model
+
+https://stackoverflow.com/questions/59750790/how-do-i-plot-a-predicted-vs-actual-graph-for-my-logit-model
+
+
+**Lecture 6 Supplements**
+Interpret R lm output: https://stats.stackexchange.com/questions/5135/interpretation-of-rs-lm-output
+https://www.learnbymarketing.com/tutorials/explaining-the-lm-summary-in-r/#:~:text=F%2DStatistic,-Finally%2C%20the%20F&text=Including%20the%20t%2Dtests%2C%20this,of%20your%20coefficients%20are%20nonzero.
+
+Interpret R lm output: https://www.statology.org/interpret-glm-output-in-r/
+https://stats.stackexchange.com/questions/86351/interpretation-of-rs-output-for-binomial-regression
+https://en.wikipedia.org/wiki/Deviance_%28statistics%29
+
